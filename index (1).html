@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Zadania z napędów — silnik obcowzbudny DC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f1218; --panel:#171c25; --panel2:#1f2632; --line:#2a3342;
+  --txt:#e8edf5; --mut:#93a0b4; --acc:#ffb020; --acc2:#3ec7ff;
+  --ok:#35d07f; --bad:#ff5a6a; --r:16px;
+  --safe-b:env(safe-area-inset-bottom,0px); --safe-t:env(safe-area-inset-top,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.55 Inter,system-ui,sans-serif}
+h1,h2,h3,.disp{font-family:"Space Grotesk",Inter,sans-serif;letter-spacing:-.01em}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+.wrap{max-width:760px;margin:0 auto;padding:calc(18px + var(--safe-t)) 14px calc(96px + var(--safe-b))}
+header.top{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--acc),#ff6a00);display:grid;place-items:center;flex:none}
+.logo svg{width:24px;height:24px}
+header.top h1{font-size:19px;margin:0;line-height:1.1}
+header.top p{margin:0;color:var(--mut);font-size:13px}
+.pts{margin-left:auto;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:14px;white-space:nowrap}
+.pts b{color:var(--acc)}
+
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:10;background:rgba(15,18,24,.95);backdrop-filter:blur(10px);border-top:1px solid var(--line);padding:6px 4px calc(6px + var(--safe-b))}
+nav.tabs .in{max-width:760px;margin:0 auto;display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+nav.tabs button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 0;border-radius:12px;color:var(--mut);font-size:10.5px;font-weight:600}
+nav.tabs button svg{width:22px;height:22px}
+nav.tabs button.on{color:var(--acc);background:var(--panel)}
+@media(min-width:820px){
+  nav.tabs{position:sticky;top:0;bottom:auto;border:0;background:var(--bg);padding:0 0 10px;margin-bottom:8px}
+  nav.tabs button{flex-direction:row;justify-content:center;gap:6px;font-size:13px;padding:10px 2px;border:1px solid var(--line)}
+  .wrap{padding-bottom:40px}
+}
+.view{display:none;animation:fade .25s ease}
+.view.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.muted{color:var(--mut)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.btn{background:var(--acc);color:#1a1200;font-weight:700;padding:14px 18px;border-radius:14px;min-height:50px;font-size:16px;transition:transform .08s}
+.btn:active{transform:scale(.97)}
+.btn.sec{background:var(--panel2);color:var(--txt);border:1px solid var(--line)}
+.btn.full{width:100%}
+.chip{font-size:12px;padding:4px 10px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);color:var(--mut)}
+.bar{height:8px;background:var(--panel2);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),#ff6a00);width:0;transition:width .3s}
+
+.hero{padding:22px;background:radial-gradient(120% 120% at 100% 0,#3a2a07 0,var(--panel) 55%)}
+.hero h2{margin:0 0 6px;font-size:23px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:14px}
+@media(min-width:600px){.grid{grid-template-columns:repeat(3,1fr)}}
+.tile{text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px;min-height:118px;display:flex;flex-direction:column;gap:6px;transition:border-color .15s,transform .08s}
+.tile:hover{border-color:var(--acc)}
+.tile:active{transform:scale(.98)}
+.tile .ic{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:var(--panel2)}
+.tile .ic svg{width:20px;height:20px}
+.tile b{font-family:"Space Grotesk";font-size:17px}
+.tile span{font-size:13px;color:var(--mut)}
+.tile em{font-style:normal;font-size:12px;color:var(--acc);margin-top:auto}
+.tile.wide{grid-column:1/-1;flex-direction:row;align-items:center;min-height:0;gap:14px}
+.tile.wide div:last-child{display:flex;flex-direction:column}
+
+/* przebieg */
+.sec{margin-top:14px}
+.sec h2{font-size:20px;margin:0 0 4px;display:flex;gap:10px;align-items:center}
+.sec h2 .n{flex:none;width:30px;height:30px;border-radius:9px;background:var(--acc);color:#1a1200;display:grid;place-items:center;font-size:15px}
+.sec h3{font-size:17px;margin:16px 0 4px;color:var(--acc)}
+.sec p{margin:6px 0}
+.sec ul{margin:6px 0;padding-left:20px}
+.sec li{margin:4px 0}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:6px;margin-right:4px;vertical-align:1px}
+.t-dol{background:rgba(62,199,255,.15);color:var(--acc2)}
+.t-gora{background:rgba(255,176,32,.15);color:var(--acc)}
+.t-plus{background:rgba(53,208,127,.15);color:var(--ok)}
+.t-minus{background:rgba(255,90,106,.15);color:var(--bad)}
+.m{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:12px}
+.m h4{margin:0 0 6px;font-family:"Space Grotesk";font-size:17px}
+.chart{background:var(--bg);border-radius:12px;margin:10px 0 4px;padding:4px}
+.chart svg{display:block;width:100%;height:auto}
+.cap{font-size:13px;color:var(--mut);text-align:center}
+.warn{border-left:4px solid var(--bad);background:rgba(255,90,106,.08);padding:10px 12px;border-radius:10px;margin:10px 0}
+.hot{border-left:4px solid var(--acc);background:rgba(255,176,32,.08);padding:10px 12px;border-radius:10px;margin:10px 0}
+.qa details{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:2px 14px;margin-top:10px}
+.qa summary{cursor:pointer;padding:12px 0;font-weight:600;list-style:none;display:flex;justify-content:space-between;gap:10px}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary::after{content:"+";color:var(--acc);font-size:22px;line-height:1;flex:none}
+.qa details[open] summary::after{content:"–"}
+.qa .a{padding:0 0 12px}
+.toc{display:flex;gap:6px;overflow-x:auto;padding:2px 0 6px;scrollbar-width:none;position:sticky;top:0;z-index:5;background:var(--bg)}
+.toc a{white-space:nowrap;padding:7px 12px;border-radius:999px;background:var(--panel);border:1px solid var(--line);font-size:13px;color:var(--txt);text-decoration:none}
+
+/* quiz */
+.qhead{display:flex;justify-content:space-between;font-size:13px;color:var(--mut);margin:0 0 8px}
+.qtext{font-size:19px;font-weight:600;margin:14px 0 16px;line-height:1.4}
+.opts{display:grid;gap:10px}
+.opt{text-align:left;background:var(--panel2);border:2px solid var(--line);border-radius:14px;padding:13px 15px;min-height:54px;font-size:16px;display:flex;gap:12px;align-items:center}
+.opt .k{flex:none;width:28px;height:28px;border-radius:8px;background:var(--bg);display:grid;place-items:center;font-weight:700;font-size:13px;color:var(--mut)}
+.opt.ok{border-color:var(--ok);background:rgba(53,208,127,.12)}
+.opt.bad{border-color:var(--bad);background:rgba(255,90,106,.12)}
+.opt:disabled{cursor:default}
+.expl{margin-top:14px;padding:14px;border-radius:12px;background:var(--bg);border-left:4px solid var(--acc2);font-size:15px;display:none}
+.expl.on{display:block}
+.result{text-align:center;padding:26px 18px}
+.big{font-size:56px;font-family:"Space Grotesk";font-weight:700;color:var(--acc);line-height:1}
+
+/* flash */
+.flash{perspective:1200px;height:320px;margin:12px 0;touch-action:pan-y}
+.flash .in{position:relative;width:100%;height:100%;transition:transform .5s cubic-bezier(.3,.7,.3,1);transform-style:preserve-3d;cursor:pointer}
+.flash.flip .in{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:20px;padding:22px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;border:1px solid var(--line);overflow:auto}
+.face.front{background:linear-gradient(160deg,#232b39,var(--panel))}
+.face.front h3{font-size:25px;margin:0}
+.face.back{background:linear-gradient(160deg,#10283a,var(--panel));transform:rotateY(180deg);font-size:16.5px}
+.face small{position:absolute;bottom:12px;color:var(--mut);font-size:12px}
+.fbtns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* pairs */
+.pairs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.pc{background:var(--panel2);border:2px solid var(--line);border-radius:12px;padding:10px;min-height:68px;font-size:14px;line-height:1.3;text-align:center;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.pc.term{font-weight:700;font-family:"Space Grotesk";font-size:15px}
+.pc.sel{border-color:var(--acc2);background:rgba(62,199,255,.12)}
+.pc.done{opacity:.25;border-color:var(--ok);pointer-events:none}
+.pc.wrong{border-color:var(--bad);animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+
+/* tf */
+.tfcard{min-height:190px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:20px;font-weight:600;padding:22px;line-height:1.4;transition:background .2s}
+.tfcard.ok{background:rgba(53,208,127,.15)}
+.tfcard.bad{background:rgba(255,90,106,.15)}
+.tfbtns{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.tfbtns button{min-height:76px;border-radius:18px;font-size:20px;font-weight:700;font-family:"Space Grotesk"}
+.tfy{background:var(--ok);color:#03200f}
+.tfn{background:var(--bad);color:#2a0006}
+.timer{font-family:"Space Grotesk";font-size:28px;font-weight:700}
+.toast{position:fixed;left:50%;bottom:calc(90px + var(--safe-b));transform:translateX(-50%) translateY(20px);background:var(--panel2);border:1px solid var(--line);padding:10px 16px;border-radius:12px;opacity:0;transition:all .25s;pointer-events:none;z-index:20;font-weight:600}
+.toast.on{opacity:1;transform:translateX(-50%)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#1a1200" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></div>
+    <div><h1>Zadania z napędów</h1><p>Silnik obcowzbudny DC</p></div>
+    <div class="pts">⚡ <b id="xp">0</b> XP</div>
+  </header>
+
+  <nav class="tabs"><div class="in" id="nav"></div></nav>
+
+  <section class="view on" id="v-home">
+    <div class="card hero">
+      <h2>Silnik obcowzbudny prądu stałego</h2>
+      <div class="muted">Regulacja prędkości, hamowanie elektryczne i charakterystyki. Zacznij od przebiegu zajęć, potem sprawdź się w grach.</div>
+    </div>
+    <div class="grid" id="tiles"></div>
+  </section>
+
+  <section class="view" id="v-plan"><div id="plan"></div></section>
+  <section class="view" id="v-quiz"><div class="card" id="quizBox"></div></section>
+
+  <section class="view" id="v-flash">
+    <div class="card">
+      <div class="qhead"><span id="fCount"></span><span id="fKnown"></span></div>
+      <div class="bar"><i id="fBar"></i></div>
+      <div class="flash" id="flash"><div class="in">
+        <div class="face front"><h3 id="fTerm"></h3><small>dotknij, aby odwrócić · przesuń, aby zmienić</small></div>
+        <div class="face back"><div id="fDef"></div><small>dotknij, aby wrócić</small></div>
+      </div></div>
+      <div class="fbtns">
+        <button class="btn sec" id="fAgain">🔁 Jeszcze raz</button>
+        <button class="btn" id="fGot">✓ Umiem</button>
+      </div>
+      <div class="row" style="margin-top:10px;justify-content:space-between">
+        <button class="chip" id="fShuffle">Przetasuj</button>
+        <button class="chip" id="fReset">Zacznij od nowa</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="v-pairs">
+    <div class="card">
+      <div class="qhead"><span>Połącz pojęcie z opisem</span><span id="pStat"></span></div>
+      <div class="pairs" id="pairs"></div>
+      <div id="pEnd" style="display:none;margin-top:14px"></div>
+    </div>
+  </section>
+
+  <section class="view" id="v-tf"><div class="card" id="tfBox"></div></section>
+  <section class="view" id="v-wyk"><div class="card" id="wykBox"></div></section>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* =================== WYKRESY (SVG) =================== */
+const COL=['#ffb020','#3ec7ff','#b388ff','#35d07f','#ff7a59'];
+function plot(o){
+  const W=340,H=250,l=36,r=16,t=16,b=30,[x0,x1]=o.x,[y0,y1]=o.y;
+  const X=v=>l+(v-x0)/(x1-x0)*(W-l-r), Y=v=>t+(y1-v)/(y1-y0)*(H-t-b);
+  let s=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" font-family="Inter,sans-serif">
+  <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#93a0b4"/></marker></defs>`;
+  if(o.quad){s+=`<rect x="${X(x0)}" y="${Y(y1)}" width="${X(0)-X(x0)}" height="${Y(y0)-Y(y1)}" fill="#ff5a6a" opacity=".05"/>
+    <text x="${(X(x0)+X(0))/2}" y="${Y(y1)+14}" fill="#93a0b4" font-size="10" text-anchor="middle">II kw. — hamowanie</text>
+    <text x="${(X(0)+X(x1))/2}" y="${Y(y1)+14}" fill="#93a0b4" font-size="10" text-anchor="middle">I kw. — praca silnikowa</text>`}
+  s+=`<line x1="${X(x0)}" y1="${Y(0)}" x2="${X(x1)}" y2="${Y(0)}" stroke="#93a0b4" stroke-width="1.4" marker-end="url(#ar)"/>
+  <line x1="${X(0)}" y1="${Y(y0)}" x2="${X(0)}" y2="${Y(y1)}" stroke="#93a0b4" stroke-width="1.4" marker-end="url(#ar)"/>
+  <text x="${X(0)+7}" y="${Y(y1)+6}" fill="#e8edf5" font-size="14" font-weight="700">ω</text>
+  <text x="${X(x1)-2}" y="${Y(0)+20}" fill="#e8edf5" font-size="12" text-anchor="end" font-weight="600">${o.xl||'I<tspan font-size="9" dy="3">t</tspan><tspan dy="-3">, M</tspan><tspan font-size="9" dy="3">e</tspan>'}</text>`;
+  (o.lines||[]).forEach((ln,i)=>{
+    const c=ln.c||COL[i%COL.length];const d=ln.p.map((p,j)=>(j?'L':'M')+X(p[0]).toFixed(1)+' '+Y(p[1]).toFixed(1)).join(' ');
+    s+=`<path d="${d}" fill="none" stroke="${c}" stroke-width="${ln.w||2.6}" stroke-linecap="round" ${ln.dash?'stroke-dasharray="6 5"':''}/>`;
+    if(o.labels!==false&&ln.lab){const e=ln.at||ln.p[ln.p.length-1];s+=`<text x="${X(e[0])+(ln.dx||4)}" y="${Y(e[1])+(ln.dy||4)}" fill="${c}" font-size="11.5" font-weight="700" text-anchor="${ln.anc||'start'}">${ln.lab}</text>`}
+  });
+  if(o.labels!==false)(o.marks||[]).forEach(m=>{
+    if(m.axis==='y')s+=`<line x1="${X(0)-4}" x2="${X(0)+4}" y1="${Y(m.v)}" y2="${Y(m.v)}" stroke="#e8edf5"/><text x="${X(0)-6}" y="${Y(m.v)+4}" fill="#e8edf5" font-size="11" text-anchor="end">${m.t}</text>`;
+    else s+=`<line y1="${Y(0)-4}" y2="${Y(0)+4}" x1="${X(m.v)}" x2="${X(m.v)}" stroke="#e8edf5"/><text x="${X(m.v)}" y="${Y(0)+18}" fill="#e8edf5" font-size="11" text-anchor="middle">${m.t}</text>`;
+  });
+  return s+'</svg>';
+}
+const sub=(a,b)=>`${a}<tspan font-size="8.5" dy="3">${b}</tspan><tspan dy="-3">\u200b</tspan>`;
+const seg=(w0,k,xmax)=>[[0,w0],[Math.min(xmax,w0/k),Math.max(0,w0-k*xmax)]];
+const CH={
+ nat:lab=>plot({x:[-.1,1.25],y:[-.1,1.3],labels:lab,marks:[{axis:'y',v:1,t:sub('ω','0')}],
+   lines:[{p:[[0,1],[1.15,.86]],lab:'naturalna',dy:-8,anc:'end',dx:0}]}),
+ rd:lab=>plot({x:[-.1,1.25],y:[-.1,1.3],labels:lab,marks:[{axis:'y',v:1,t:sub('ω','0')}],
+   lines:[{p:seg(1,.12,1.15),lab:'R<tspan font-size="8.5" dy="3">d</tspan><tspan dy="-3"> = 0 (nat.)</tspan>',dy:-7,anc:'end',dx:0},
+          {p:seg(1,.4,1.15),lab:sub('R','d1'),dy:-6},{p:seg(1,.75,1.15),lab:sub('R','d2'),dx:6,dy:-2},{p:seg(1,1.25,1.15),lab:sub('R','d3'),dx:4,dy:-8}]}),
+ ut:lab=>plot({x:[-.1,1.25],y:[-.1,1.3],labels:lab,marks:[{axis:'y',v:1,t:sub('ω','0N')},{axis:'y',v:.68,t:sub('ω','01')},{axis:'y',v:.38,t:sub('ω','02')}],
+   lines:[{p:seg(1,.15,1.15),lab:sub('U','tN'),dy:-6},{p:seg(.68,.15,1.15),lab:sub('U','t1'),dy:-6},{p:seg(.38,.15,1.15),lab:sub('U','t2'),dy:-6}]}),
+ fi_i:lab=>plot({x:[-.1,1.8],y:[-.1,1.4],labels:lab,xl:'I<tspan font-size="9" dy="3">t</tspan>',marks:[{axis:'y',v:.6,t:sub('ω','0N')},{axis:'y',v:.9,t:sub('ω','01')},{axis:'y',v:1.25,t:sub('ω','02')},{axis:'x',v:1.6,t:sub('I','tz')}],
+   lines:[{p:[[0,.6],[1.6,0]],lab:sub('Φ','wN'),at:[.45,.43],dy:-6},{p:[[0,.9],[1.6,0]],lab:sub('Φ','w1'),at:[.55,.59],dy:-6},{p:[[0,1.25],[1.6,0]],lab:sub('Φ','w2'),at:[.6,.78],dy:-6}]}),
+ fi_m:lab=>plot({x:[-.1,1.8],y:[-.1,1.4],labels:lab,xl:'M<tspan font-size="9" dy="3">e</tspan>',marks:[{axis:'y',v:.6,t:sub('ω','0N')},{axis:'y',v:.9,t:sub('ω','01')},{axis:'y',v:1.25,t:sub('ω','02')}],
+   lines:[{p:[[0,.6],[1.6,0]],lab:sub('Φ','wN'),at:[1.25,.13],dy:-8},{p:[[0,.9],[1.07,0]],lab:sub('Φ','w1'),at:[.9,.15],dx:6},{p:[[0,1.25],[.77,0]],lab:sub('Φ','w2'),at:[.45,.52],dx:6}]}),
+ dyn:lab=>plot({x:[-1.3,1.2],y:[-.25,1.35],quad:1,labels:lab,
+   lines:[{p:[[0,1],[1.1,.88]],lab:'naturalna',dy:-8,anc:'end',dx:0},{p:[[0,0],[-1.25,.55]],lab:sub('R','h1'),dy:-6,dx:0},{p:[[0,0],[-.62,1.15]],lab:sub('R','h2'),dy:-4,dx:-20}]}),
+ prz:lab=>plot({x:[-1.3,1.2],y:[-1.2,1.35],quad:1,labels:lab,marks:[{axis:'y',v:-1,t:'−ω<tspan font-size="8.5" dy="3">0</tspan>'},{axis:'y',v:1,t:sub('ω','0')}],
+   lines:[{p:[[0,1],[1.1,.88]],lab:'naturalna',dy:-8,anc:'end',dx:0},{p:[[0,-1],[-1.2,.95]],lab:'przeciwwłączenie',at:[-1.2,.95],dy:-6,dx:0}]}),
+ odz:lab=>plot({x:[-1.3,1.2],y:[-.25,1.4],quad:1,labels:lab,marks:[{axis:'y',v:1,t:sub('ω','0')}],
+   lines:[{p:[[0,1],[1.1,.86]],lab:'praca silnikowa',dy:-8,anc:'end',dx:0},{p:[[-1.2,1.15],[0,1]],c:'#35d07f',lab:'ω > ω<tspan font-size="8.5" dy="3">0</tspan>',at:[-1.2,1.15],dy:-8,dx:0}]})
+};
+const fig=(k,cap)=>`<div class="chart">${CH[k](true)}</div>${cap?`<div class="cap">${cap}</div>`:''}`;
+
+/* =================== TREŚĆ =================== */
+const S=(a,b)=>`${a}<sub>${b}</sub>`;
+const FISZKI=[
+ ["Silnik obcowzbudny — skąd nazwa?",`Obwód wzbudzenia (stojan) i obwód twornika (wirnik) są elektrycznie odseparowane i zasilane z <b>dwóch osobnych, niezależnych źródeł</b>. Pole magnetyczne pochodzi z „obcego”, zewnętrznego zasilacza.`,"Twornik i wzbudzenie z dwóch niezależnych źródeł"],
+ ["Jak działa silnik obcowzbudny?",`1) Prąd wzbudzenia w stojanie wytwarza stałe pole (strumień ${S('Φ','w')}).<br>2) Napięcie na tworniku → prąd ${S('I','t')} w polu ${S('Φ','w')} → siła elektrodynamiczna → moment ${S('M','e')} → wirnik się obraca.`,`Prąd ${S('I','t')} w polu ${S('Φ','w')} daje moment`],
+ ["Kolejność załączania",`Najpierw <b>WZBUDZENIE</b> (ustawiamy ${S('I','wN')}), dopiero potem napięcie na twornik.<br>Wyłączanie odwrotnie: najpierw twornik, na końcu wzbudzenie.`,"Najpierw wzbudzenie, potem twornik"],
+ ["Co, jeśli zasilimy twornik bez wzbudzenia?",`${S('Φ','w')} ≈ 0 → nie indukuje się SEM ${S('E','s')} → <b>gigantyczny prąd zwarcia</b>, spalenie uzwojeń. Na biegu jałowym ${S('ω','0')} ~ 1/${S('Φ','w')} → silnik się <b>rozbiega</b>, grozi rozerwaniem wirnika.`,"Prąd zwarcia i rozbieganie silnika"],
+ ["Charakterystyka elektromechaniczna",`ω = f(${S('I','t')}) — prędkość w funkcji prądu twornika. Prosta opadająca w dół.`,`ω = f(${S('I','t')})`],
+ ["Charakterystyka mechaniczna",`ω = f(${S('M','e')}) — prędkość w funkcji momentu obrotowego. Prosta opadająca w dół.`,`ω = f(${S('M','e')})`],
+ ["Charakterystyka naturalna",`Napięcie znamionowe, prąd wzbudzenia znamionowy i <b>żadnych dodatkowych rezystorów</b>. Zmiana któregokolwiek z tych trzech parametrów daje charakterystykę <b>sztuczną</b>.`,"Znamionowe U i Iw, brak rezystorów"],
+ ["Regulacja rezystancją dodatkową Rd",`Rezystor w szereg z twornikiem, regulacja <b>„w dół”</b>. Wykres: <b>wachlarz</b> prostych z jednego punktu ${S('ω','0')}, coraz bardziej stromych.<br>Wady: duże straty mocy (grzanie, mała sprawność), miękka charakterystyka. Stosowana też przy rozruchu.`,`Wachlarz z jednego punktu ${S('ω','0')}`],
+ ["Regulacja napięciem twornika Ut",`Zmniejszamy ${S('U','t')} od znamionowego w dół, regulacja <b>„w dół”</b>. Wykres: <b>proste równoległe</b>, im mniejsze napięcie, tym niżej.<br><b>Najlepsza metoda</b>: wysoka sprawność, płynna, stała sztywność.`,"Proste równoległe — najlepsza metoda"],
+ ["Regulacja strumieniem wzbudzenia Φw",`Osłabianie pola (zmniejszanie ${S('I','w')} poniżej znamionowego), regulacja <b>„w górę”</b>, powyżej prędkości znamionowej. Proste startują wyżej, ale są bardziej strome.<br>Zaleta: małe straty. Uwaga: moment dopuszczalny spada <b>hiperbolicznie</b>.`,"Regulacja „w górę” przez osłabianie pola"],
+ ["Φw: wykres od prądu a od momentu",`ω(${S('I','t')}): wszystkie proste schodzą się w <b>jednym punkcie na osi prądu</b> (prąd zwarcia ${S('I','tz')}).<br>ω(${S('M','e')}): proste <b>przecinają się</b> między sobą, bez wspólnego punktu na dole.`,`Wspólny punkt ${S('I','tz')} na osi prądu`],
+ ["Dlaczego nie zwiększamy Iw ponad znamionowy?",`Obwód magnetyczny ulega <b>nasyceniu</b>: strumień już prawie nie rośnie, a uzwojenie wzbudzenia tylko się przegrzewa i może się spalić.`,"Nasycenie obwodu magnetycznego"],
+ ["Hamowanie odzyskowe (prądnicowe)",`Gdy ω > ${S('ω','0')}, np. przy opuszczaniu ciężaru dźwigiem. Silnik staje się prądnicą i <b>oddaje energię do źródła</b>, o ile źródło ją przyjmie (np. akumulator).`,`ω > ${S('ω','0')}, energia wraca do źródła`],
+ ["Hamowanie dynamiczne (rezystorowe)",`Odłączamy twornik od zasilania (${S('U','t')} = 0) i zwieramy go przez rezystor ${S('R','h')}. <b>Wzbudzenie zostaje włączone!</b> Energia kinetyczna → ciepło na rezystorze. Proste przechodzą przez (0,0).`,`${S('U','t')} = 0, twornik zwarty przez ${S('R','h')}`],
+ ["Wada hamowania dynamicznego",`Im wolniej silnik się kręci, tym słabiej hamuje. Przy ω = 0 <b>moment hamujący wynosi zero</b>.`,"Przy ω = 0 brak momentu hamującego"],
+ ["Hamowanie przeciwwłączeniem",`Odwracamy biegunowość napięcia twornika podczas pracy i <b>obowiązkowo dokładamy duży rezystor ${S('R','h')}</b>. Hamowanie gwałtowne, działa aż do zatrzymania (przy ω = 0 nadal duży moment).`,`Odwrócone ${S('U','t')} + duży ${S('R','h')}`],
+ ["Haczyk przeciwwłączenia",`Ogromne straty energii (prąd z sieci + energia mechaniczna → ciepło). Przy ω = 0 trzeba <b>natychmiast odłączyć zasilanie</b>, inaczej silnik rozpędzi się w drugą stronę.`,"Przy ω = 0 odłączyć, bo ruszy wstecz"],
+ ["Czym obciążamy silnik na stanowisku?",`Drugą maszyną prądu stałego (${S('M','p')}) na <b>wspólnym, sztywnym wale</b>. Przy pracy silnikowej jest prądnicą (hamulcem) i oddaje moc na rezystor obciążenia, a przy badaniu hamowania sama pracuje jako silnik i napędza badany układ.`,`Druga maszyna DC ${S('M','p')} na wspólnym wale`],
+ ["Sztywność / ustępliwość",`Miara tego, jak bardzo spada prędkość pod obciążeniem. Naturalna i napięciowa: <b>sztywne</b> (mała ustępliwość). Z rezystorem ${S('R','d')}: <b>miękka</b> (duża ustępliwość).`,"Spadek prędkości pod obciążeniem"],
+ ["Hamowanie na wykresie",`Moment i prąd są ujemne, więc rysujemy w <b>II kwadrancie</b>. Dynamiczne: proste z (0,0), im większe ${S('R','h')}, tym bardziej stromo. Przeciwwłączenie: proste schodzą do −${S('ω','0')}.`,"II kwadrant — M i I ujemne"],
+ ["Prędkość biegu jałowego ω0",`Punkt startowy charakterystyki na osi prędkości (przy zerowym obciążeniu). ${S('ω','0')} ~ 1/${S('Φ','w')}.`,"Punkt startowy na osi ω"]
+];
+
+const QUIZ=[
+ {q:"Co załączamy jako pierwsze?",o:["Wzbudzenie","Twornik","Oba jednocześnie","Rezystor hamowania"],a:0,e:`Najpierw wzbudzenie (${S('I','wN')}), potem napięcie na twornik.`},
+ {q:"Jaka jest kolejność wyłączania?",o:["Najpierw twornik, potem wzbudzenie","Najpierw wzbudzenie, potem twornik","Kolejność nie ma znaczenia","Najpierw maszyna obciążająca"],a:0,e:"Wyłączamy odwrotnie niż włączamy: twornik, a na końcu wzbudzenie."},
+ {q:"Dlaczego silnik nazywa się „obcowzbudny”?",o:["Wzbudzenie i twornik są zasilane z dwóch niezależnych źródeł","Ma magnesy trwałe","Wzbudzenie jest w szereg z twornikiem","Wzbudzenie zasila prąd z twornika"],a:0,e:"Obwody są elektrycznie odseparowane, a pole pochodzi z „obcego”, zewnętrznego zasilacza."},
+ {q:"Co grozi, gdy zaniknie wzbudzenie przy zasilonym tworniku na biegu jałowym?",o:["Rozbieganie i rozerwanie wirnika","Zatrzymanie silnika","Zmiana kierunku obrotów","Nic, silnik pracuje dalej"],a:0,e:`${S('ω','0')} ~ 1/${S('Φ','w')}. Gdy strumień spada do zera, prędkość rośnie bez ograniczenia, a do tego płynie ogromny prąd zwarcia.`},
+ {q:"Która metoda pozwala regulować prędkość „w górę” (powyżej znamionowej)?",o:["Zmiana strumienia wzbudzenia","Zmiana napięcia twornika","Rezystancja dodatkowa Rd","Hamowanie dynamiczne"],a:0,e:`Osłabiamy pole, czyli zmniejszamy ${S('I','w')} poniżej znamionowego.`},
+ {q:"Która metoda regulacji jest najlepsza i najbardziej ekonomiczna?",o:["Napięciowa (zmiana Ut)","Rezystorowa (Rd)","Wzbudzeniem, przez zwiększanie Iw","Przeciwwłączeniem"],a:0,e:"Ma wysoką sprawność, bo nie ma strat na rezystorach. Regulacja jest płynna, a sztywność stała."},
+ {q:"Jakie są wady regulacji rezystancją dodatkową Rd?",o:["Duże straty mocy i miękka charakterystyka","Spadek momentu dopuszczalnego hiperbolicznie","Nie da się zejść poniżej prędkości znamionowej","Wymaga drugiego zasilacza"],a:0,e:"Rezystor się grzeje, więc sprawność jest mała, a prędkość mocno przysiada pod obciążeniem."},
+ {q:"Jak wyglądają charakterystyki przy regulacji rezystancją Rd?",o:["Wachlarz prostych z jednego punktu ω0","Proste równoległe","Proste zbiegające się na osi prądu","Proste przechodzące przez (0,0)"],a:0,e:`Wszystkie wychodzą z ${S('ω','0')} i opadają tym bardziej stromo, im większe ${S('R','d')}.`},
+ {q:"Jak wyglądają charakterystyki przy regulacji napięciem twornika?",o:["Proste równoległe, niżej przy mniejszym Ut","Wachlarz z jednego punktu","Coraz bardziej strome, coraz wyżej","Proste przez −ω0"],a:0,e:"Nachylenie, czyli sztywność, się nie zmienia, a cała prosta przesuwa się w dół."},
+ {q:"Przy regulacji strumieniem, na wykresie ω = f(It) proste:",o:["schodzą się w jednym punkcie na osi prądu (Itz)","są równoległe","wychodzą z jednego punktu ω0","przecinają się bez wspólnego punktu"],a:0,e:`Wspólny punkt to prąd zwarcia ${S('I','tz')}. Na wykresie od momentu proste tylko się przecinają.`},
+ {q:"Kiedy charakterystyka jest naturalna?",o:["Przy znamionowym napięciu i prądzie wzbudzenia, bez rezystorów","Przy dowolnym napięciu, ale bez rezystorów","Przy zwiększonym prądzie wzbudzenia","Tylko podczas hamowania"],a:0,e:"Wszystkie trzy warunki muszą być spełnione. Zmiana któregokolwiek z nich daje charakterystykę sztuczną."},
+ {q:"Kiedy zachodzi hamowanie odzyskowe?",o:["Gdy ω > ω0, np. przy opuszczaniu ciężaru","Gdy Ut = 0","Po odwróceniu biegunowości Ut","Przy ω = 0"],a:0,e:"Silnik staje się prądnicą i oddaje energię do źródła, o ile źródło ją przyjmie."},
+ {q:"Na czym polega hamowanie dynamiczne?",o:["Ut = 0, twornik zwarty przez Rh, wzbudzenie włączone","Wyłączamy wzbudzenie","Odwracamy biegunowość napięcia twornika","Zwiększamy napięcie twornika"],a:0,e:"Energia kinetyczna wirnika zamienia się w ciepło na rezystorze hamowania."},
+ {q:"Jaka jest główna wada hamowania dynamicznego?",o:["Przy ω = 0 moment hamujący wynosi zero","Silnik może ruszyć w drugą stronę","Ogromny prąd z sieci","Działa tylko przy ω > ω0"],a:0,e:"Im wolniej silnik się kręci, tym słabiej hamuje."},
+ {q:"Co trzeba zrobić przy hamowaniu przeciwwłączeniem, gdy ω spadnie do 0?",o:["Natychmiast odłączyć zasilanie","Zwiększyć Rh","Wyłączyć wzbudzenie","Nic, silnik sam stanie"],a:0,e:"Inaczej silnik zacznie się rozpędzać w drugą stronę."},
+ {q:"Po co przy przeciwwłączeniu dokłada się duży rezystor Rh?",o:["Żeby ogromny prąd nie spalił uzwojeń","Żeby zwiększyć prędkość","Żeby odzyskać energię","Żeby osłabić pole"],a:0,e:"Po odwróceniu napięcia SEM i napięcie zasilania sumują się, więc prąd byłby ogromny."},
+ {q:"Dlaczego nie zwiększa się prądu wzbudzenia powyżej znamionowego?",o:["Obwód magnetyczny się nasyca, a uzwojenie się przegrzewa","Silnik by się rozbiegł","Spadłoby napięcie twornika","Zmieniłby się kierunek obrotów"],a:0,e:"Strumień praktycznie przestaje rosnąć, więc zostaje tylko grzanie uzwojenia."},
+ {q:"Czym na stanowisku obciążamy badany silnik?",o:["Drugą maszyną DC (Mp) na wspólnym wale","Hamulcem mechanicznym","Falownikiem","Kondensatorem"],a:0,e:"Przy pracy silnikowej Mp jest prądnicą i oddaje moc na rezystor, a przy badaniu hamowania napędza układ."},
+ {q:"Które charakterystyki są sztywne (mała ustępliwość)?",o:["Naturalna i napięciowa","Z rezystorem Rd","Tylko przy hamowaniu dynamicznym","Wszystkie są tak samo sztywne"],a:0,e:`Z rezystorem ${S('R','d')} charakterystyka jest miękka, bo prędkość mocno spada pod obciążeniem.`},
+ {q:"Jak zmienia się moment dopuszczalny przy osłabianiu strumienia?",o:["Spada hiperbolicznie","Rośnie liniowo","Nie zmienia się","Spada do zera skokowo"],a:0,e:"To główne ograniczenie regulacji „w górę”."},
+ {q:"W którym kwadrancie rysujemy charakterystyki hamowania?",o:["II","I","III","IV"],a:0,e:"Podczas hamowania moment i prąd są ujemne, a prędkość dodatnia, więc rysujemy po lewej stronie osi ω."},
+ {q:"Co przedstawia charakterystyka mechaniczna?",o:["ω = f(Me)","ω = f(It)","It = f(Ut)","Me = f(Iw)"],a:0,e:"Mechaniczna to prędkość od momentu, a elektromechaniczna to prędkość od prądu twornika."}
+];
+
+const TF=[
+ ["Najpierw załączamy napięcie na twornik, potem wzbudzenie.",false,"Odwrotnie: najpierw wzbudzenie."],
+ ["Obcowzbudny oznacza, że twornik i wzbudzenie mają osobne źródła zasilania.",true,"Obwody są elektrycznie odseparowane."],
+ ["Regulacja rezystancją Rd pozwala zwiększyć prędkość powyżej znamionowej.",false,"To regulacja „w dół”."],
+ ["Regulacja napięciem twornika daje proste równoległe.",true,"Sztywność się nie zmienia."],
+ ["Regulacja napięciowa ma duże straty na rezystorach.",false,"To najlepsza i najbardziej ekonomiczna metoda."],
+ ["Osłabianie pola zwiększa prędkość.",true,"ω0 ~ 1/Φw, czyli regulacja „w górę”."],
+ ["Prąd wzbudzenia warto zwiększać ponad znamionowy, żeby zmniejszyć prędkość.",false,"Obwód magnetyczny się nasyca, a uzwojenie się przegrzewa."],
+ ["Przy regulacji rezystancją wszystkie proste wychodzą z jednego punktu ω0.",true,"To tzw. wachlarz."],
+ ["Charakterystyka z rezystorem Rd jest sztywna.",false,"Jest miękka i ma dużą ustępliwość."],
+ ["Hamowanie odzyskowe zachodzi, gdy ω > ω0.",true,"Np. przy opuszczaniu ciężaru."],
+ ["Przy hamowaniu dynamicznym wyłączamy wzbudzenie.",false,"Wzbudzenie zostaje włączone!"],
+ ["Przy hamowaniu dynamicznym moment hamujący przy ω = 0 wynosi zero.",true,"To jego główna wada."],
+ ["Przy przeciwwłączeniu silnik zatrzyma się sam i nie trzeba nic robić.",false,"Trzeba odłączyć zasilanie, bo ruszy w drugą stronę."],
+ ["Przeciwwłączenie działa aż do pełnego zatrzymania.",true,"Przy ω = 0 nadal ma duży moment hamujący."],
+ ["Przy przeciwwłączeniu nie potrzeba rezystora.",false,"Obowiązkowo dokładamy duży Rh."],
+ ["Charakterystyki hamowania rysujemy w II kwadrancie.",true,"Moment i prąd są ujemne."],
+ ["Proste hamowania dynamicznego przechodzą przez (0,0).",true,"Bo Ut = 0."],
+ ["Przy regulacji strumieniem moment dopuszczalny rośnie.",false,"Spada hiperbolicznie."],
+ ["Na stanowisku silnik obciąża druga maszyna DC na wspólnym wale.",true,"To maszyna Mp."],
+ ["Charakterystyka naturalna może mieć dodatkowy rezystor w tworniku.",false,"Naturalna oznacza brak dodatkowych rezystorów."],
+ ["Charakterystyka elektromechaniczna to ω = f(It).",true,"Mechaniczna to ω = f(Me)."],
+ ["Przy regulacji strumieniem na wykresie ω(Me) proste schodzą się w jednym punkcie.",false,"Na ω(Me) tylko się przecinają. Wspólny punkt Itz jest na wykresie ω(It)."]
+];
+
+const WYK=[
+ ["nat","Charakterystyka naturalna","Jedna prosta z ω0, lekko opadająca: znamionowe U i Iw, bez rezystorów."],
+ ["rd","Regulacja rezystancją Rd","Wachlarz z jednego punktu ω0, coraz bardziej stromy."],
+ ["ut","Regulacja napięciem Ut","Proste równoległe, im mniejsze Ut, tym niżej."],
+ ["fi_i","Regulacja strumieniem Φw — ω(It)","Proste startują coraz wyżej i schodzą się w punkcie Itz na osi prądu."],
+ ["fi_m","Regulacja strumieniem Φw — ω(Me)","Proste startują wyżej, są bardziej strome i krzyżują się bez wspólnego punktu."],
+ ["dyn","Hamowanie dynamiczne","Proste w II kwadrancie wychodzą z (0,0)."],
+ ["prz","Hamowanie przeciwwłączeniem","Prosta przechodzi przez −ω0 i idzie w II kwadrant."],
+ ["odz","Hamowanie odzyskowe","Przedłużenie charakterystyki ponad ω0 w II kwadrant (ω > ω0)."]
+];
+
+/* =================== PRZEBIEG ZAJĘĆ =================== */
+const PLAN=`
+<div class="card hero"><h2>Przebieg zajęć</h2><div class="muted">Prowadzący zwykle oczekuje na wejściu zwięzłego podsumowania, o czym jest ćwiczenie, a potem dopytuje o fizyczny sens wykresów i zabezpieczenia. Sekcje idą w kolejności takiej rozmowy.</div></div>
+<div class="toc" style="margin-top:12px"><a href="#plan">↑</a><a href="#p1">1. Zarys</a><a href="#p2">2. Regulacja</a><a href="#p3">3. Hamowanie</a><a href="#p4">4. Pytania</a><a href="#p5">5. Co pytają</a><a href="#p6">6. Rysowanie</a></div>
+
+<div class="card sec" id="p1"><h2><span class="n">1</span>Ogólny zarys</h2>
+<p class="muted">„Czego się dzisiaj nauczyliśmy / co robimy?”</p>
+<h3>Temat</h3><p>Badamy <b>silnik obcowzbudny prądu stałego (DC)</b>. Ma dwa całkowicie niezależne obwody zasilane osobno: <b>obwód twornika</b> (wirnik) i <b>obwód wzbudzenia</b> (stojan, który tworzy pole magnetyczne).</p>
+<h3>Cel</h3><p>Uczymy się kształtować charakterystyki silnika, czyli sterować jego prędkością i momentem, w dwóch stanach: podczas <b>normalnej pracy silnikowej</b> i podczas <b>hamowania elektrycznego</b>.</p>
+<h3>Co mierzymy</h3><p>Dwie główne charakterystyki. Na wykresie są to proste opadające w dół:</p>
+<ul><li><b>Elektromechaniczna:</b> ω = f(${S('I','t')}), czyli prędkość od prądu twornika.</li><li><b>Mechaniczna:</b> ω = f(${S('M','e')}), czyli prędkość od momentu obrotowego.</li></ul>
+<h3>Naturalna a sztuczna</h3><p><b>Naturalna:</b> napięcie znamionowe, prąd wzbudzenia znamionowy, bez dodatkowych rezystorów. Każda zmiana tych trzech parametrów daje charakterystykę <b>sztuczną</b>.</p>
+${fig('nat','Charakterystyka naturalna')}
+</div>
+
+<div class="card sec" id="p2"><h2><span class="n">2</span>Trzy metody regulacji prędkości</h2>
+<p class="muted">Praca silnikowa. To główna część, o którą pytają: jak zmienia się prędkość, jak wyglądają wykresy oraz jakie są wady i zalety każdej metody.</p>
+<div class="m"><h4>1. Dodatkowa rezystancja w tworniku (${S('R','d')})</h4>
+<p><span class="tag t-dol">„W DÓŁ”</span>tylko poniżej prędkości znamionowej</p>
+<p><b>Wykres:</b> proste wychodzą z jednego punktu na osi prędkości (${S('ω','0')}) i opadają coraz bardziej stromo wraz ze wzrostem ${S('R','d')}, jak wachlarz.</p>
+<p><span class="tag t-minus">WADY</span>duże straty mocy (rezystor się grzeje, sprawność jest mała) i <b>miękka</b> charakterystyka, bo prędkość mocno przysiada pod obciążeniem. Stosowana też przy rozruchu.</p>
+${fig('rd',`„Wachlarz z góry”: ${S('R','d3')} > ${S('R','d2')} > ${S('R','d1')}`)}</div>
+<div class="m"><h4>2. Zmiana napięcia twornika (${S('U','t')})</h4>
+<p><span class="tag t-dol">„W DÓŁ”</span>nie można przekroczyć napięcia znamionowego</p>
+<p><b>Wykres:</b> zbiór prostych równoległych, które przesuwają się w dół, gdy napięcie maleje.</p>
+<p><span class="tag t-plus">ZALETY</span><b>Najlepsza metoda.</b> Wysoka sprawność (brak strat na rezystorach), płynna regulacja i stała sztywność, czyli nachylenie wykresu.</p>
+${fig('ut',`„Schodki równoległe”: ${S('U','t2')} < ${S('U','t1')} < ${S('U','tN')}`)}</div>
+<div class="m"><h4>3. Zmiana strumienia wzbudzenia (${S('Φ','w')} / prądu ${S('I','w')})</h4>
+<p><span class="tag t-gora">„W GÓRĘ”</span>powyżej prędkości znamionowej</p>
+<p>Prędkość zwiększamy przez <b>osłabianie strumienia</b>, czyli zmniejszanie ${S('I','w')}. Proste stają się coraz bardziej strome, ale uciekają w górę osi prędkości.</p>
+<p><span class="tag t-plus">ZALETA</span>małe straty mocy, więc metoda jest ekonomiczna. <span class="tag t-minus">UWAGA</span>moment dopuszczalny spada hiperbolicznie.</p>
+${fig('fi_i',`ω = f(${S('I','t')}): wszystkie proste schodzą się w ${S('I','tz')} (prąd zwarcia)`)}
+${fig('fi_m',`ω = f(${S('M','e')}): proste się przecinają, nie ma wspólnego punktu na dole`)}</div>
+</div>
+
+<div class="card sec" id="p3"><h2><span class="n">3</span>Trzy metody hamowania elektrycznego</h2>
+<p class="muted">Pytanie: „Jak możemy zahamować ten silnik prądem?”</p>
+<div class="m"><h4>Hamowanie odzyskowe (prądnicowe)</h4>
+<p><b>Kiedy:</b> gdy prędkość przekroczy prędkość biegu jałowego (ω > ${S('ω','0')}), np. przy opuszczaniu ciężaru na dźwigu.</p>
+<p><b>Co się dzieje:</b> silnik staje się prądnicą i oddaje energię z powrotem do sieci lub źródła, o ile źródło potrafi ją przyjąć (np. akumulator).</p>
+${fig('odz','Odzyskowe: przedłużenie charakterystyki ponad ω0')}</div>
+<div class="m"><h4>Hamowanie dynamiczne (rezystorowe)</h4>
+<p><b>Jak:</b> odłączamy twornik od zasilania (${S('U','t')} = 0) i zwieramy go przez rezystor hamowania ${S('R','h')}. <b>Wzbudzenie zostaje włączone!</b></p>
+<p><b>Co się dzieje:</b> energia kinetyczna wirnika zamienia się w prąd i wytraca się jako ciepło na rezystorze.</p>
+<p><b>Wykres:</b> proste przechodzą przez środek układu (0,0). Im większe ${S('R','h')}, tym wyżej (bardziej stromo) idzie prosta.</p>
+<p><span class="tag t-minus">WADA</span>im wolniej silnik się kręci, tym słabiej hamuje. Przy prędkości zerowej moment hamujący wynosi zero.</p>
+${fig('dyn','Dynamiczne: proste z (0,0) w II kwadrancie')}</div>
+<div class="m"><h4>Hamowanie przeciwwłączeniem (przeciwprądowe)</h4>
+<p><b>Jak:</b> podczas pracy przełączamy biegunowość napięcia twornika na przeciwną i <b>obowiązkowo dokładamy duży rezystor ${S('R','h')}</b>, żeby ogromny prąd nie spalił uzwojeń.</p>
+<p><span class="tag t-plus">ZALETA</span>hamowanie bardzo gwałtowne i skuteczne, działa aż do pełnego zatrzymania (przy ω = 0 nadal jest duży moment hamujący).</p>
+<p><span class="tag t-minus">WADY</span>ogromne straty energii, bo silnik ciągnie prąd z sieci i jednocześnie wytraca energię mechaniczną na ciepło.</p>
+<div class="warn"><b>Haczyk:</b> w momencie zatrzymania (ω = 0) trzeba natychmiast odłączyć zasilanie, inaczej silnik zacznie się rozpędzać w drugą stronę!</div>
+${fig('prz','Przeciwwłączenie: prosta idzie aż do −ω0 poniżej zera')}</div>
+</div>
+
+<div class="card sec qa" id="p4"><h2><span class="n">4</span>Typowe pytania podchwytliwe</h2>
+<details open><summary>Dlaczego najpierw załączamy wzbudzenie, a dopiero potem twornik? Dlaczego nie wolno przerwać obwodu wzbudzenia podczas pracy?</summary><div class="a">Prąd wzbudzenia tworzy strumień magnetyczny ${S('Φ','w')}, a prędkość jest odwrotnie proporcjonalna do strumienia. Jeśli strumień spadnie do zera przy podłączonym napięciu twornika, silnik spróbuje się rozbiegać do nieskończonej prędkości i ulegnie rozerwaniu mechanicznemu. Do tego przez twornik popłynie gigantyczny prąd zwarcia.</div></details>
+<details><summary>Dlaczego przy sterowaniu wzbudzeniem tylko osłabiamy prąd wzbudzenia, a nie zwiększamy go ponad znamionowy?</summary><div class="a">Bo obwód magnetyczny ulega <b>nasyceniu</b>. Dalsze zwiększanie prądu wzbudzenia prawie nie zwiększy strumienia, a jedynie przegrzeje i spali uzwojenie wzbudzenia.</div></details>
+<details><summary>Czym na stanowisku obciążamy badany silnik?</summary><div class="a">Drugą maszyną prądu stałego (${S('M','p')}) połączoną na sztywno na jednym wale. Podczas badania pracy silnikowej pracuje jako <b>prądnica (hamulec)</b> i oddaje moc na rezystor obciążenia, a podczas badania hamowania sama pracuje jako <b>silnik</b> i napędza badany układ.</div></details>
+<details><summary>Co to jest sztywność / ustępliwość charakterystyki?</summary><div class="a">To miara tego, jak bardzo spada prędkość silnika, gdy zaczynamy go obciążać. Charakterystyka naturalna i napięciowa są <b>sztywne</b> (mała ustępliwość, prędkość mało spada). Charakterystyka z dodatkowym rezystorem ${S('R','d')} jest <b>miękka</b> (duża ustępliwość, silnik pod obciążeniem mocno zwalnia).</div></details>
+</div>
+
+<div class="card sec qa" id="p5"><h2><span class="n">5</span>Co konkretnie pyta (od kolegów)</h2>
+<div class="hot">Krótkie odpowiedzi, które działają jak ściągawka.</div>
+<details open><summary>Co włączamy pierwsze: wzbudzenie czy twornik?</summary><div class="a">Zawsze najpierw <b>WZBUDZENIE</b> (ustawiamy prąd znamionowy ${S('I','wN')}), a dopiero potem napięcie na twornik. Wyłączamy odwrotnie: najpierw twornik, na końcu wzbudzenie.<br><br><b>Dlaczego? (to pytanie na 100% padnie)</b> Prąd wzbudzenia wytwarza strumień ${S('Φ','w')}. Gdyby podać napięcie na twornik bez wzbudzenia (${S('Φ','w')} ≈ 0):<ul><li>w tworniku nie indukowałaby się SEM ${S('E','s')} i popłynąłby gigantyczny prąd zwarcia, który spaliłby uzwojenia,</li><li>na biegu jałowym, ponieważ ${S('ω','0')} ~ 1/${S('Φ','w')}, silnik zacząłby się rozbiegać do nieskończenie wielkiej prędkości, co grozi rozerwaniem wirnika.</li></ul></div></details>
+<details><summary>Dlaczego nazywa się „obcowzbudny”?</summary><div class="a">Obwód wzbudzenia (elektromagnes w stojanie) i obwód twornika (wirnik) są od siebie elektrycznie całkowicie odseparowane i zasilane z <b>dwóch osobnych, niezależnych źródeł napięcia</b>. Pole magnetyczne pochodzi z „obcego”, zewnętrznego zasilacza, a nie z tego samego źródła co prąd wirnika.</div></details>
+<details><summary>Jak działa silnik obcowzbudny (osobne zasilanie)?</summary><div class="a"><ol style="padding-left:20px;margin:0"><li>Z jednego zasilacza podajemy prąd na uzwojenie wzbudzenia (stojan), co wytwarza stałe pole magnetyczne (strumień ${S('Φ','w')}).</li><li>Z drugiego zasilacza podajemy napięcie na uzwojenie twornika (wirnik). Na przewodnik z prądem ${S('I','t')} w polu ${S('Φ','w')} działa siła elektrodynamiczna, która tworzy moment ${S('M','e')} i wprawia wirnik w ruch.</li></ol></div></details>
+<details><summary>Jakie są rodzaje regulacji prędkości?</summary><div class="a"><ol style="padding-left:20px;margin:0"><li><b>Rezystorowa</b> (zmiana ${S('R','d')} w obwodzie twornika): regulacja „w dół” przez dokładanie oporu w szereg z wirnikiem. Duże straty mocy na ciepło.</li><li><b>Napięciowa</b> (zmiana ${S('U','t')}): regulacja „w dół”, zmniejszamy napięcie od znamionowego. Najlepsza i najbardziej ekonomiczna.</li><li><b>Wzbudzeniem</b> (zmiana ${S('Φ','w')} / ${S('I','w')}): regulacja „w górę”, powyżej prędkości znamionowej, przez osłabianie ${S('I','w')} poniżej znamionowego.</li></ol></div></details>
+<details><summary>Charakterystyki: jak wyglądają i jak się zmieniają?</summary><div class="a">Wszystkie charakterystyki to <b>proste opadające w dół</b>. Rysunki znajdziesz w sekcji 6 niżej.</div></details>
+</div>
+
+<div class="card sec" id="p6"><h2><span class="n">6</span>Jak to narysować na kartce</h2>
+<p>Na osi pionowej zawsze podpisz prędkość <b>ω</b>, a na poziomej prąd twornika <b>${S('I','t')}</b> (lub moment <b>${S('M','e')}</b>). Punkt startowy na osi pionowej to prędkość biegu jałowego <b>${S('ω','0')}</b>.</p>
+<h3>A. Rezystancja dodatkowa: „wachlarz z góry”</h3><p>Wszystkie linie wychodzą z jednego punktu ${S('ω','0N')} i opadają coraz bardziej stromo, gdy dokładamy rezystancję.</p>${fig('rd')}
+<h3>B. Napięcie twornika: „schodki równoległe”</h3><p>Linie są równoległe. Im mniejsze napięcie, tym niżej leży cała prosta.</p>${fig('ut')}
+<h3>C. Strumień wzbudzenia: „ucieczka w górę”</h3><p>Gdy zmniejszasz strumień (${S('Φ','w2')} < ${S('Φ','w1')} < ${S('Φ','wN')}), wykres startuje coraz wyżej, ale robi się coraz bardziej stromy. Od prądu: linie schodzą się w ${S('I','tz')}. Od momentu: linie się przecinają.</p>${fig('fi_i')}${fig('fi_m')}
+<h3>D. Hamowanie: lewa strona (II kwadrant)</h3><p>Podczas hamowania moment i prąd są ujemne. <b>Dynamiczne:</b> linie wychodzą ze środka (0,0) w lewo do góry, a im większe ${S('R','h')}, tym bardziej stromo. <b>Przeciwwłączenie:</b> linie są przedłużeniem w lewo, przechodzą przez oś pionową i schodzą aż do −${S('ω','0')}.</p>${fig('dyn')}${fig('prz')}
+</div>`;
+
+/* =================== SILNIK STRONY =================== */
+const $=s=>document.querySelector(s);
+const R=(a,b)=>Math.floor(Math.random()*(b-a+1))+a, pick=a=>a[R(0,a.length-1)];
+const store={get(k,d){try{const v=localStorage.getItem('ndc_'+k);return v===null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('ndc_'+k,JSON.stringify(v))}catch(e){}}};
+let XP=store.get('xp',0);
+function addXP(n){XP+=n;store.set('xp',XP);$('#xp').textContent=XP;}
+$('#xp').textContent=XP;
+function toast(t){const e=$('#toast');e.innerHTML=t;e.classList.add('on');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('on'),1400);}
+function vibe(ms){try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}}
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+
+const IC={
+ home:'<path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/>',
+ plan:'<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/>',
+ quiz:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14"/><circle cx="12" cy="17" r=".6" fill="currentColor"/>',
+ flash:'<rect x="3" y="6" width="14" height="12" rx="2"/><path d="M7 3h12a2 2 0 0 1 2 2v11"/>',
+ pairs:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><path d="M10 6.5h4a3 3 0 0 1 3 3V14"/>',
+ tf:'<path d="m5 12 4 4 10-10"/>',
+ wyk:'<path d="M4 3v17h17"/><path d="M7 6l11 10M7 6l6 11"/>'
+};
+const svg=k=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[k]}</svg>`;
+const MODES=[["home","Start"],["plan","Zajęcia"],["quiz","Quiz"],["flash","Fiszki"],["pairs","Pary"],["tf","P/F"],["wyk","Wykresy"]];
+const TILES=[
+ ["quiz","Quiz",`${QUIZ.length} pytań z wyjaśnieniami`,"+10 XP / pytanie","#ffb020"],
+ ["flash","Fiszki","Odwracaj karty i odhaczaj, co umiesz","+2 XP / kartę","#3ec7ff"],
+ ["pairs","Pary","Połącz pojęcie z opisem na czas","+5 XP / parę","#b388ff"],
+ ["tf","Prawda / Fałsz","60 sekund, ile zdążysz?","+5 XP / odp.","#35d07f"],
+ ["wyk","Rozpoznaj wykres","Co przedstawia ta charakterystyka?","+10 XP / wykres","#ff7a59"]
+];
+$('#nav').innerHTML=MODES.map(([k,l])=>`<button data-v="${k}">${svg(k)}<span>${l}</span></button>`).join('');
+$('#tiles').innerHTML=`<button class="tile wide" data-v="plan"><div class="ic" style="color:#ffb020">${svg('plan')}</div><div><b>Przebieg zajęć</b><span>Co mówić na wejściu, metody regulacji i hamowania, pytania podchwytliwe, rysunki</span></div></button>`+
+ TILES.map(([k,t,d,x,c])=>`<button class="tile" data-v="${k}"><div class="ic" style="color:${c}">${svg(k)}</div><b>${t}</b><span>${d}</span><em>${x}</em></button>`).join('');
+$('#plan').innerHTML=PLAN;
+document.querySelectorAll('.toc a').forEach(a=>a.onclick=e=>{e.preventDefault();const id=a.getAttribute('href').slice(1);document.getElementById(id==='plan'?'v-plan':id).scrollIntoView({behavior:'smooth'})});
+
+const INIT={quiz:startQuiz,pairs:startPairs,tf:tfIntro,flash:()=>renderFlash(),wyk:()=>{if(!wk)newWyk()}};
+function go(v){
+  if(!document.getElementById('v-'+v))v='home';
+  document.querySelectorAll('.view').forEach(e=>e.classList.toggle('on',e.id==='v-'+v));
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  if(v!=='tf')stopTF();
+  INIT[v]&&INIT[v]();
+  window.scrollTo({top:0});
+  if(location.hash!=='#'+v)history.replaceState(null,'','#'+v);
+}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-v]');if(b)go(b.dataset.v)});
+window.addEventListener('hashchange',()=>go(location.hash.slice(1)||'home'));
+
+/* QUIZ */
+let qz;
+function startQuiz(){qz={list:shuffle(QUIZ).slice(0,10).map(q=>{const idx=shuffle(q.o.map((_,i)=>i));return{...q,o:idx.map(i=>q.o[i]),a:idx.indexOf(q.a)}}),i:0,ok:0};renderQ();}
+function renderQ(){
+  const q=qz.list[qz.i],n=qz.list.length;
+  $('#quizBox').innerHTML=`<div class="qhead"><span>Pytanie ${qz.i+1} / ${n}</span><span>✓ ${qz.ok}</span></div>
+  <div class="bar"><i style="width:${qz.i/n*100}%"></i></div>
+  <div class="qtext">${q.q}</div>
+  <div class="opts">${q.o.map((o,i)=>`<button class="opt" data-i="${i}"><span class="k">${'ABCD'[i]}</span><span>${o}</span></button>`).join('')}</div>
+  <div class="expl" id="qExpl"></div>
+  <button class="btn full" id="qNext" style="margin-top:14px;display:none">${qz.i+1<n?'Dalej →':'Zobacz wynik'}</button>`;
+  $('#quizBox').querySelectorAll('.opt').forEach(b=>b.onclick=()=>answerQ(+b.dataset.i));
+  $('#qNext').onclick=()=>{qz.i++;qz.i<n?renderQ():endQ()};
+}
+function answerQ(i){
+  const q=qz.list[qz.i],bs=$('#quizBox').querySelectorAll('.opt');
+  bs.forEach(b=>b.disabled=true);bs[q.a].classList.add('ok');
+  if(i===q.a){qz.ok++;addXP(10);toast('Dobrze! +10 XP');vibe(20)}else{bs[i].classList.add('bad');vibe([40,40,40])}
+  const ex=$('#qExpl');ex.innerHTML=(i===q.a?'<b style="color:var(--ok)">Dobrze!</b> ':'<b style="color:var(--bad)">Nie tym razem.</b> ')+q.e;ex.classList.add('on');
+  $('#qNext').style.display='block';$('#qNext').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function endQ(){
+  const n=qz.list.length,best=Math.max(store.get('qbest',0),qz.ok);store.set('qbest',best);
+  const msg=qz.ok>=9?'Mistrzostwo! 🏆':qz.ok>=7?'Bardzo dobrze 💪':qz.ok>=5?'Nieźle, jeszcze trochę powtórki':'Przejrzyj przebieg zajęć i spróbuj ponownie';
+  $('#quizBox').innerHTML=`<div class="result"><div class="big">${qz.ok}/${n}</div><h2>${msg}</h2><p class="muted">Najlepszy wynik: ${best}/${n}</p>
+  <div class="row" style="justify-content:center;margin-top:12px"><button class="btn" id="qAgain">Jeszcze raz</button><button class="btn sec" data-v="plan">Przebieg zajęć</button></div></div>`;
+  $('#qAgain').onclick=startQuiz;
+}
+
+/* FISZKI */
+let fdeck=shuffle(FISZKI.map((_,i)=>i)),fi=0,known=new Set(store.get('known',[]));
+function renderFlash(){
+  if(!fdeck.length){fdeck=FISZKI.map((_,i)=>i).filter(i=>!known.has(i));if(!fdeck.length){known.clear();store.set('known',[]);fdeck=shuffle(FISZKI.map((_,i)=>i));toast('Wszystkie umiesz! Zaczynamy od nowa 🎉')}}
+  fi=Math.min(fi,fdeck.length-1);
+  const c=FISZKI[fdeck[fi]];
+  $('#flash').classList.remove('flip');
+  setTimeout(()=>{$('#fTerm').innerHTML=c[0];$('#fDef').innerHTML=c[1];},120);
+  $('#fCount').textContent=`Karta ${fi+1} / ${fdeck.length}`;
+  $('#fKnown').textContent=`Umiem: ${known.size} / ${FISZKI.length}`;
+  $('#fBar').style.width=known.size/FISZKI.length*100+'%';
+}
+$('#flash').onclick=()=>$('#flash').classList.toggle('flip');
+$('#fGot').onclick=()=>{known.add(fdeck[fi]);store.set('known',[...known]);addXP(2);fdeck.splice(fi,1);if(fi>=fdeck.length)fi=0;renderFlash()};
+$('#fAgain').onclick=()=>{fi=(fi+1)%fdeck.length;renderFlash()};
+$('#fShuffle').onclick=()=>{fdeck=shuffle(fdeck);fi=0;renderFlash()};
+$('#fReset').onclick=()=>{known.clear();store.set('known',[]);fdeck=shuffle(FISZKI.map((_,i)=>i));fi=0;renderFlash()};
+(()=>{let x0=null;const el=$('#flash');
+ el.addEventListener('touchstart',e=>{x0=e.touches[0].clientX},{passive:true});
+ el.addEventListener('touchend',e=>{if(x0===null)return;const dx=e.changedTouches[0].clientX-x0;x0=null;
+  if(Math.abs(dx)>60){e.preventDefault();fi=(fi+(dx<0?1:fdeck.length-1))%fdeck.length;renderFlash()}});
+})();
+
+/* PARY */
+let pr;
+function startPairs(){
+  const set=shuffle(FISZKI.map((_,i)=>i)).slice(0,5);
+  const L=shuffle(set).map(i=>({i,h:FISZKI[i][0].replace(/\?$/,''),t:1})),Rr=shuffle(set).map(i=>({i,h:FISZKI[i][2],t:0}));
+  pr={sel:null,left:set.length,miss:0,t0:Date.now()};
+  const cells=[];for(let k=0;k<set.length;k++)cells.push(L[k],Rr[k]);
+  $('#pairs').innerHTML=cells.map(c=>`<button class="pc ${c.t?'term':''}" data-i="${c.i}" data-t="${c.t}"><span>${c.h}</span></button>`).join('');
+  $('#pEnd').style.display='none';$('#pStat').textContent='Pomyłki: 0';
+  $('#pairs').querySelectorAll('.pc').forEach(b=>b.onclick=()=>tapPair(b));
+}
+function tapPair(b){
+  if(!pr.sel){pr.sel=b;b.classList.add('sel');return}
+  if(pr.sel===b){b.classList.remove('sel');pr.sel=null;return}
+  if(pr.sel.dataset.t===b.dataset.t){pr.sel.classList.remove('sel');pr.sel=b;b.classList.add('sel');return}
+  const a=pr.sel;pr.sel=null;a.classList.remove('sel');
+  if(a.dataset.i===b.dataset.i){a.classList.add('done');b.classList.add('done');addXP(5);vibe(15);pr.left--;
+    if(!pr.left){const s=Math.round((Date.now()-pr.t0)/1000);const best=store.get('pbest',null);const nb=best===null||s<best;if(nb)store.set('pbest',s);
+      $('#pEnd').innerHTML=`<div class="result" style="padding:10px"><div class="big">${s}s</div><p class="muted">Pomyłki: ${pr.miss}${nb?' · nowy rekord! 🏆':' · rekord: '+best+'s'}</p><button class="btn full" id="pAgain">Nowa runda</button></div>`;
+      $('#pEnd').style.display='block';$('#pAgain').onclick=startPairs;}
+  }else{pr.miss++;$('#pStat').textContent='Pomyłki: '+pr.miss;[a,b].forEach(x=>{x.classList.add('wrong');setTimeout(()=>x.classList.remove('wrong'),400)});vibe([30,30,30])}
+}
+
+/* PRAWDA / FAŁSZ */
+let tf,tfTimer;
+function tfIntro(){stopTF();const best=store.get('tfbest',0);
+  $('#tfBox').innerHTML=`<div class="result"><div class="big">60s</div><h2>Prawda czy fałsz?</h2><p class="muted">Odpowiadaj jak najszybciej. Pomyłka zabiera 3 sekundy.<br>Rekord: <b>${best}</b> pkt</p><button class="btn full" id="tfGo">Start!</button></div>`;
+  $('#tfGo').onclick=startTF;}
+function startTF(){
+  tf={deck:shuffle(TF),i:0,pts:0,streak:0,end:Date.now()+60000,lock:false};
+  $('#tfBox').innerHTML=`<div class="qhead"><span class="timer" id="tfT">60</span><span style="align-self:center">Punkty: <b id="tfP">0</b> · Seria: <b id="tfS">0</b></span></div>
+   <div class="bar"><i id="tfBar" style="width:100%;transition:width .2s linear"></i></div>
+   <div class="card tfcard" id="tfQ" style="margin-top:12px"></div>
+   <div class="tfbtns"><button class="tfn" data-a="0">✗ Fałsz</button><button class="tfy" data-a="1">✓ Prawda</button></div>
+   <div class="muted" id="tfE" style="min-height:44px;margin-top:10px;font-size:14px;text-align:center"></div>`;
+  $('#tfBox').querySelectorAll('.tfbtns button').forEach(b=>b.onclick=()=>ansTF(b.dataset.a==='1'));
+  showTF();tfTimer=setInterval(tickTF,200);
+}
+function showTF(){if(tf.i>=tf.deck.length){tf.deck=shuffle(TF);tf.i=0}$('#tfQ').className='card tfcard';$('#tfQ').innerHTML=tf.deck[tf.i][0];}
+function ansTF(v){if(tf.lock)return;const it=tf.deck[tf.i];const ok=v===it[1];tf.lock=true;
+  $('#tfQ').classList.add(ok?'ok':'bad');
+  if(ok){tf.streak++;tf.pts+=1+Math.floor(tf.streak/5);addXP(5);vibe(15)}else{tf.streak=0;tf.end-=3000;vibe([40,40,40])}
+  $('#tfP').textContent=tf.pts;$('#tfS').textContent=tf.streak;
+  $('#tfE').innerHTML=(ok?'✓ ':'✗ ')+it[2];
+  setTimeout(()=>{tf.lock=false;tf.i++;if(tf.end>Date.now())showTF()},ok?350:1000);}
+function tickTF(){const left=Math.max(0,tf.end-Date.now());$('#tfT').textContent=Math.ceil(left/1000);$('#tfBar').style.width=left/600+'%';
+  if(!left){stopTF();const best=store.get('tfbest',0),nb=tf.pts>best;if(nb)store.set('tfbest',tf.pts);
+   $('#tfBox').innerHTML=`<div class="result"><div class="big">${tf.pts}</div><h2>${nb?'Nowy rekord! 🏆':'Koniec czasu'}</h2><p class="muted">Rekord: ${Math.max(best,tf.pts)} pkt</p><button class="btn full" id="tfGo">Zagraj jeszcze raz</button></div>`;
+   $('#tfGo').onclick=startTF;}}
+function stopTF(){clearInterval(tfTimer)}
+
+/* ROZPOZNAJ WYKRES */
+let wk=null,wst={ok:0,all:0},wlast=-1;
+function newWyk(){
+  let i;do{i=R(0,WYK.length-1)}while(i===wlast);wlast=i;
+  const others=shuffle(WYK.filter((_,j)=>j!==i)).slice(0,3);const opts=shuffle([WYK[i],...others]);
+  wk={i,opts,done:false};
+  $('#wykBox').innerHTML=`<div class="qhead"><span>Co przedstawia ta charakterystyka?</span><span>✓ ${wst.ok} / ${wst.all}</span></div>
+   <div class="chart" id="wChart">${CH[WYK[i][0]](false)}</div>
+   <div class="opts" style="margin-top:12px">${opts.map((o,k)=>`<button class="opt" data-k="${k}"><span class="k">${'ABCD'[k]}</span><span>${o[1]}</span></button>`).join('')}</div>
+   <div class="expl" id="wExpl"></div>
+   <button class="btn full" id="wNext" style="margin-top:12px;display:none">Następny wykres →</button>`;
+  $('#wykBox').querySelectorAll('.opt').forEach(b=>b.onclick=()=>ansWyk(+b.dataset.k));
+  $('#wNext').onclick=newWyk;
+}
+function ansWyk(k){if(wk.done)return;wk.done=true;const bs=$('#wykBox').querySelectorAll('.opt');const ci=wk.opts.indexOf(WYK[wk.i]);
+  bs.forEach(b=>b.disabled=true);bs[ci].classList.add('ok');wst.all++;
+  if(k===ci){wst.ok++;addXP(10);toast('Dobrze! +10 XP');vibe(20)}else{bs[k].classList.add('bad');vibe([40,40,40])}
+  $('#wChart').innerHTML=CH[WYK[wk.i][0]](true);
+  $('#wExpl').innerHTML=(k===ci?'<b style="color:var(--ok)">Dobrze!</b> ':'<b style="color:var(--bad)">Nie tym razem.</b> ')+WYK[wk.i][2];$('#wExpl').classList.add('on');
+  $('#wNext').style.display='block';$('#wNext').scrollIntoView({behavior:'smooth',block:'nearest'});}
+
+go(location.hash.slice(1)||'home');
+</script>
+</body>
+</html>
