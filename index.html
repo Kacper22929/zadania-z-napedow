@@ -192,10 +192,6 @@ body.typing .chat{height:calc(100dvh - 140px)}
 .cin input{flex:1;min-width:0;background:var(--bg);border:2px solid var(--line);border-radius:12px;color:var(--txt);font:16px Inter,sans-serif;padding:11px 12px;outline:none}
 .cin input:focus{border-color:var(--acc)}
 .cin button{background:var(--acc);color:#1a1200;font-weight:700;border-radius:12px;padding:0 16px}
-.mbar{display:flex;gap:6px;padding:8px 10px;border-bottom:1px solid var(--line);flex:none}
-.mbar button{flex:1;padding:8px 6px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);font-size:13px;font-weight:700;white-space:nowrap}
-.mbar button.on{background:var(--acc);color:#1a1200;border-color:var(--acc)}
-.mbar button[data-keyset]{flex:none;width:42px}
 .msg ol{margin:4px 0;padding-left:20px}
 .key{background:rgba(255,176,32,.1);border-left:3px solid var(--acc);padding:8px 10px;border-radius:8px;margin:6px 0}
 .frag p{margin:0 0 8px}.frag p:last-child{margin-bottom:0}
@@ -801,10 +797,10 @@ function renderAI(){
   box.innerHTML=`<div class="vbar"><button class="tb" data-aiback>← Zmień plik</button><div class="t">${f.short}</div></div>
   <div class="seg2"><button data-seg="doc">📄 Instrukcja</button><button data-seg="chat">💬 Czat</button></div>
   <div class="split"><div id="aiDoc"><div class="vbar" style="margin-bottom:8px">${zoomBar('av',f)}</div>${viewerHTML(f,'av')}</div>
-  <div class="card chat" id="aiChat"><div id="mbarBox">${modeBar()}</div><div class="msgs" id="msgs"></div><div class="chips" id="chips">${f.q.map(q=>`<button data-ask="${esc(q)}">${esc(q)}</button>`).join('')}</div>
+  <div class="card chat" id="aiChat"><div class="msgs" id="msgs"></div><div class="chips" id="chips">${f.q.map(q=>`<button data-ask="${esc(q)}">${esc(q)}</button>`).join('')}</div>
   <form class="cin" id="cin"><input id="qIn" placeholder="Zadaj pytanie o tę instrukcję…" autocomplete="off" enterkeyhint="send"><button type="submit">Wyślij</button></form></div></div>`;
   mountViewer(f,'av');setSeg(ai.seg);
-  if(!CHAT[f.id])CHAT[f.id]=[{r:'b',h:`Cześć! Jestem asystentem do instrukcji <b>${esc(f.title)}</b>.<br>Zadaj pytanie, a odpowiem na podstawie tego pliku i pokażę strony, z których pochodzi odpowiedź.<br><br><b>✨ AI</b> wyjaśnia własnymi słowami (potrzebny darmowy klucz Google). <b>🔎 Fragmenty</b> pokazuje dokładne fragmenty instrukcji i działa bez internetu. Tryb zmienisz przyciskami u góry czatu.`}];
+  if(!CHAT[f.id])CHAT[f.id]=[{r:'b',h:`Cześć! Jestem asystentem do instrukcji <b>${esc(f.title)}</b>.<br>Zadaj pytanie, a znajdę odpowiedź w tym pliku i pokażę stronę, z której pochodzi. Możesz też kliknąć jedno z gotowych pytań poniżej albo wpisać <b>spis treści</b>.`}];
   $('#msgs').innerHTML=CHAT[f.id].map(m=>`<div class="msg ${m.r}">${m.h}</div>`).join('');scrollChat();
   $('#cin').onsubmit=e=>{e.preventDefault();const v=$('#qIn').value.trim();if(!v)return;$('#qIn').value='';ask(v)};
   const inp=$('#qIn');inp.onfocus=()=>{if(innerWidth<820)document.body.classList.add('typing')};inp.onblur=()=>setTimeout(()=>document.body.classList.remove('typing'),150);
@@ -816,13 +812,10 @@ function ask(q){
   const f=fileById(ai.id);pushMsg('u',esc(q));
   const t=document.createElement('div');t.className='msg b';t.innerHTML='<span class="dots"><span></span><span></span><span></span></span>';$('#msgs').appendChild(t);scrollChat();
   const show=h=>{t.remove();const el=pushMsg('b',h);const m=$('#msgs');m.scrollTop=el.offsetTop-10};
-  if(aiMode()==='ai'){
-    if(!GKEY()){show(keyMsg('Na razie nie mam klucza AI, więc niżej pokazuję fragment instrukcji.'));setTimeout(()=>{const el=pushMsg('b',answer(f,q))},50);return}
-    gemini(f,q).then(txt=>show(`<div class="src">✨ Odpowiedź AI na podstawie instrukcji</div>${md(txt)}`)).catch(e=>show(errMsg(e)));
-  }else setTimeout(()=>show(answer(f,q)),300);
+  setTimeout(()=>show(answer(f,q)),300);
 }
 document.addEventListener('click',e=>{
-  const t=e.target.closest('[data-plopen],[data-plback],[data-goai],[data-aisel],[data-aiback],[data-zoom],[data-dl],[data-seg],[data-ask],[data-goto],[data-cont],[data-chunk],[data-mode],[data-keyset],[data-savekey],[data-delkey]');if(!t)return;
+  const t=e.target.closest('[data-plopen],[data-plback],[data-goai],[data-aisel],[data-aiback],[data-zoom],[data-dl],[data-seg],[data-ask],[data-goto],[data-cont],[data-chunk]');if(!t)return;
   const d=t.dataset;
   if(d.plopen){pl.id=d.plopen;renderPliki();window.scrollTo({top:0})}
   else if('plback' in d){pl.id=null;renderPliki()}
@@ -833,84 +826,11 @@ document.addEventListener('click',e=>{
   else if(d.dl){t.href=pdfUrl(fileById(d.dl))}
   else if(d.seg){setSeg(d.seg)}
   else if(d.ask){ask(d.ask)}
-  else if(d.mode){store.set('aimode',d.mode);$('#mbarBox').innerHTML=modeBar();if(d.mode==='ai'&&!GKEY()){const el=pushMsg('b',keyMsg());$('#msgs').scrollTop=el.offsetTop-10}}
-  else if('keyset' in d){const k=GKEY();const el=pushMsg('b',k?`🔑 Klucz jest zapisany (…${esc(k.slice(-4))}). Model: <b>${esc(store.get('gmodel','wybierany automatycznie'))}</b>.<br><button class="pgbtn" data-delkey>Usuń klucz</button>`+keyMsg('Możesz też wkleić nowy klucz:'):keyMsg());$('#msgs').scrollTop=el.offsetTop-10}
-  else if('delkey' in d){store.set('gkey','');store.set('gmodel','');store.set('aimode','local');$('#mbarBox').innerHTML=modeBar();pushMsg('b','Klucz usunięty. Działa tryb 🔎 Fragmenty.');scrollChat()}
-  else if('savekey' in d){const inp=t.parentElement.querySelector('input');const k=(inp&&inp.value||'').trim();if(k.length<20){toast('To nie wygląda na klucz');return}
-    store.set('gkey',k);store.set('gmodel','');store.set('aimode','ai');$('#mbarBox').innerHTML=modeBar();t.textContent='Sprawdzam…';
-    pickModel(k,true).then(m=>{const el=pushMsg('b',`✅ Klucz działa! Używam modelu <b>${esc(m)}</b>. Zadaj pytanie, a odpowiem własnymi słowami.`);$('#msgs').scrollTop=el.offsetTop-10;t.textContent='Zapisano'})
-    .catch(e=>{store.set('gkey','');store.set('aimode','local');$('#mbarBox').innerHTML=modeBar();const el=pushMsg('b',errMsg(e.status?e:{status:400,body:'API key'}));$('#msgs').scrollTop=el.offsetTop-10;t.textContent='Zapisz'})}
   else if(d.goto){if(ai.id&&document.getElementById('av')){if(innerWidth<900)setSeg('doc');setTimeout(()=>goPage('av',+d.goto),60)}else goPage('pv',+d.goto)}
   else if(d.cont){const f=fileById(ai.id);const el=pushMsg('b',chunkMsg(f,+d.cont,null,'Dalsza część:'));$('#msgs').scrollTop=el.offsetTop-10;t.remove()}
   else if(d.chunk){const f=fileById(ai.id);const {terms}=search(f,d.q||'');const el=pushMsg('b',chunkMsg(f,+d.chunk,terms));$('#msgs').scrollTop=el.offsetTop-10}
 });
 
-/* =================== TRYB AI (Google Gemini) =================== */
-const GKEY=()=>store.get('gkey','');
-function aiMode(){return store.get('aimode','ai')}
-function docText(f){if(!f._doc){const by={};f.chunks.forEach(c=>{(by[c.p]=by[c.p]||[]).push(c.t)});f._doc=Object.keys(by).map(p=>`=== STRONA ${p} ===\n`+by[p].join('\n')).join('\n\n')}return f._doc}
-const AIH={};
-async function pickModel(key,force){
-  let m=store.get('gmodel','');if(m&&!force)return m;
-  const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200',{headers:{'x-goog-api-key':key}});
-  if(!r.ok)throw {status:r.status,body:await r.text().catch(()=>'')};
-  const j=await r.json();
-  const sc=n=>{if(!/^gemini-/.test(n)||/image|tts|audio|live|embed|vision|robot|computer|learnlm|nano|omni/.test(n))return -1;const v=parseFloat((n.match(/gemini-(\d+(?:\.\d+)?)/)||[])[1]||0);let s=v*10;if(/flash/.test(n))s+=6;if(/lite/.test(n))s-=4;if(/pro/.test(n))s-=3;if(/preview|exp/.test(n))s-=5;if(/-\d{3}$/.test(n))s-=.5;return s};
-  const ms=(j.models||[]).filter(x=>(x.supportedGenerationMethods||[]).includes('generateContent')).map(x=>x.name.replace(/^models\//,'')).filter(n=>sc(n)>=0).sort((a,b)=>sc(b)-sc(a));
-  if(!ms.length)throw {status:0,body:'Brak dostępnych modeli Gemini dla tego klucza.'};
-  store.set('gmodel',ms[0]);return ms[0];
-}
-async function gemini(f,q){
-  const key=GKEY();const h=AIH[f.id]=AIH[f.id]||[];
-  const sys=`Jesteś pomocnym asystentem studenta przed zajęciami laboratoryjnymi. Odpowiadasz WYŁĄCZNIE na podstawie poniższej instrukcji do ćwiczenia „${f.title}”.
-Zasady:
-- Pisz po polsku, prostym językiem, WŁASNYMI SŁOWAMI — nie kopiuj całych zdań z instrukcji.
-- Odpowiadaj zwięźle: zwykle 2–6 zdań albo krótka lista kroków. Wyjaśnij sens fizyczny, jeśli pomaga zrozumieć.
-- Jeśli czegoś nie ma w instrukcji, powiedz to wprost i nie zgaduj. Możesz wtedy wskazać, który fragment instrukcji jest najbliżej tematu.
-- Wzory w tekście mogą być niekompletne (były obrazkami). Jeśli wzoru brakuje, powiedz, na której stronie go szukać.
-- Na końcu odpowiedzi podaj strony, na których to jest, w formacie [str. N] (numery stron z oznaczeń „=== STRONA N ===”).
-- Formatuj czytelnie: krótkie akapity (1–3 zdania) oddzielone pustą linią, a kroki i wyliczenia jako listę z myślnikami. Nigdy nie pisz jednego długiego akapitu.
-- Używaj **pogrubienia** dla kluczowych pojęć. Nie używaj nagłówków.
-
-TREŚĆ INSTRUKCJI:
-${docText(f)}`;
-  const body=m=>({systemInstruction:{parts:[{text:sys}]},contents:[...h.slice(-8),{role:'user',parts:[{text:q}]}],generationConfig:{temperature:.3,maxOutputTokens:4096}});
-  let model=await pickModel(key);
-  const call=async m=>fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`,{method:'POST',headers:{'x-goog-api-key':key,'Content-Type':'application/json'},body:JSON.stringify(body(m))});
-  let r=await call(model);
-  if(r.status===404){model=await pickModel(key,true);r=await call(model)}
-  if(!r.ok)throw {status:r.status,body:await r.text().catch(()=>'')};
-  const j=await r.json();
-  const txt=((j.candidates||[])[0]?.content?.parts||[]).filter(p=>!p.thought).map(p=>p.text||'').join('').trim();
-  if(!txt)throw {status:-1,body:JSON.stringify(j.promptFeedback||j).slice(0,200)};
-  h.push({role:'user',parts:[{text:q}]},{role:'model',parts:[{text:txt}]});
-  return txt;
-}
-function md(t){
-  let s=esc(t);
-  s=s.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g,'$1<i>$2</i>');
-  const lines=s.split('\n');let out='',list=null;
-  lines.forEach(l=>{const m=l.match(/^\s*(?:[-*•]|(\d+)[.)])\s+(.*)/);
-    if(m){const tg=m[1]?'ol':'ul';if(list!==tg){if(list)out+=`</${list}>`;out+=`<${tg}>`;list=tg}out+=`<li>${m[2]}</li>`}
-    else{if(list){out+=`</${list}>`;list=null}out+=l.trim()?l+'<br>':'<br>'}});
-  if(list)out+=`</${list}>`;
-  out=out.replace(/(<br>){2,}/g,'<br><br>').replace(/(<br>)+$/,'');
-  out=out.replace(/\[(?:str|strona|s)\.?\s*([\d,\s–-]+)\]/gi,(_,g)=>{const ps=[...new Set((g.match(/\d+/g)||[]).map(Number))];const rng=g.match(/(\d+)\s*[–-]\s*(\d+)/);if(rng){for(let i=+rng[1];i<=+rng[2]&&ps.length<8;i++)if(!ps.includes(i))ps.push(i)}return ps.sort((a,b)=>a-b).map(p=>`<button class="pgbtn" data-goto="${p}">str. ${p} →</button>`).join('')});
-  return out;
-}
-function keyMsg(extra){return `${extra?extra+'<br><br>':''}Żeby asystent odpowiadał <b>własnymi słowami</b>, potrzebuje darmowego klucza <b>Google Gemini</b>:
-<ol><li>Wejdź na <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="color:var(--acc2)">aistudio.google.com/apikey</a> i zaloguj się kontem Google.</li><li>Kliknij <b>Create API key</b> i skopiuj klucz.</li><li>Wklej go poniżej i kliknij <b>Zapisz</b>.</li></ol>
-<div class="cin" style="padding:6px 0 0;border:0"><input id="keyIn" placeholder="Wklej klucz (zaczyna się od AIza…)" autocomplete="off"><button data-savekey>Zapisz</button></div>
-<div class="muted" style="font-size:12px;margin-top:6px">Klucz zapisuje się tylko w tej przeglądarce, na tym urządzeniu. Nie trafia do kodu strony ani na GitHuba. Do tego czasu działa tryb 🔎 Fragmenty.</div>`}
-function errMsg(e){
-  const b=(e&&e.body)||'';const st=e&&e.status;
-  if(st===400&&/API key|API_KEY/i.test(b)||st===401||st===403&&/key/i.test(b))return keyMsg('❌ Ten klucz nie działa (Google go odrzucił).');
-  if(st===429)return '⏳ Przekroczony darmowy limit zapytań. Odczekaj minutę i spróbuj jeszcze raz. Na ten czas możesz przełączyć się na tryb 🔎 Fragmenty.';
-  if(st===403)return '❌ Google odmówił dostępu ('+esc(b.slice(0,160))+'). Sprawdź, czy klucz jest aktywny w AI Studio.';
-  if(st===undefined||st===0&&!b)return '📡 Brak połączenia z serwerem AI. Sprawdź internet albo przełącz na tryb 🔎 Fragmenty.';
-  return '❌ Coś poszło nie tak ('+esc(String(st))+'): '+esc(b.slice(0,200));
-}
-function modeBar(){const m=aiMode();return `<div class="mbar"><button data-mode="ai" class="${m==='ai'?'on':''}">✨ AI — własne słowa</button><button data-mode="local" class="${m==='local'?'on':''}">🔎 Fragmenty</button><button data-keyset title="Klucz API">🔑</button></div>`}
 
 /*ENGINE-END*/
 go(location.hash.slice(1)||'home');
