@@ -198,6 +198,9 @@ body.typing .chat{height:calc(100dvh - 140px)}
 .frag ol,.frag ul{margin:6px 0 4px;padding-left:20px}.frag li{margin:3px 0}
 .fragd summary{cursor:pointer;color:var(--acc2);font-size:13px;font-weight:600;margin:6px 0 2px}
 .fragd[open] summary{margin-bottom:8px}
+.mbar{display:flex;gap:6px;padding:8px 10px;border-bottom:1px solid var(--line);flex:none}
+.mbar button{flex:1;padding:8px 6px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);font-size:13px;font-weight:700;white-space:nowrap}
+.mbar button.on{background:var(--acc);color:#1a1200;border-color:var(--acc)}
 .dots span{display:inline-block;width:7px;height:7px;margin:0 2px;border-radius:50%;background:var(--mut);animation:dot 1s infinite}
 .dots span:nth-child(2){animation-delay:.15s}.dots span:nth-child(3){animation-delay:.3s}
 @keyframes dot{0%,80%,100%{opacity:.25}40%{opacity:1}}
@@ -1271,6 +1274,50 @@ function renderPliki(){
   
 }
 
+
+/* =================== TRYB AI (przez pośrednika Cloudflare) =================== */
+const AI_URL='https://napedy-ai.jutipl845.workers.dev';   // <- adres Workera, np. https://napedy-ai.twojekonto.workers.dev
+const hasAI=()=>!!AI_URL;
+const aiMode=()=>hasAI()?store.get('aimode','ai'):'local';
+function docText(f){if(!f._doc){const by={};f.chunks.forEach(c=>{(by[c.p]=by[c.p]||[]).push(c.t)});f._doc=Object.keys(by).map(p=>`=== STRONA ${p} ===\n`+by[p].join('\n')).join('\n\n')}return f._doc}
+const AIH={};
+async function askAI(f,q){
+  const h=AIH[f.id]=AIH[f.id]||[];
+  const sys=`Jesteś pomocnym asystentem studenta przed zajęciami laboratoryjnymi z napędów elektrycznych. Odpowiadasz WYŁĄCZNIE na podstawie poniższej instrukcji „${f.title}”.
+Zasady:
+- Pisz po polsku, prostym językiem, WŁASNYMI SŁOWAMI — nie kopiuj całych zdań z instrukcji.
+- Odpowiadaj zwięźle: zwykle 2–6 zdań albo krótka lista kroków. Wyjaśnij sens fizyczny, jeśli pomaga zrozumieć.
+- Formatuj czytelnie: krótkie akapity (1–3 zdania) oddzielone pustą linią, kroki i wyliczenia jako listę z myślnikami. Nigdy jeden długi akapit.
+- Jeśli czegoś nie ma w instrukcji, powiedz to wprost i nie zgaduj; możesz wskazać najbliższy fragment.
+- Wzory w tekście mogą być niekompletne (w PDF były obrazkami). Jeśli wzoru brakuje, powiedz, na której stronie go szukać.
+- Na końcu podaj strony w formacie [str. N] (numery z oznaczeń „=== STRONA N ===”).
+- Używaj **pogrubienia** dla kluczowych pojęć. Bez nagłówków.
+
+TREŚĆ INSTRUKCJI:
+${docText(f)}`;
+  const contents=[...h.slice(-8),{role:'user',parts:[{text:q}]}];
+  const ctl=new AbortController();const to=setTimeout(()=>ctl.abort(),45000);
+  let r;try{r=await fetch(AI_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:sys,contents}),signal:ctl.signal})}finally{clearTimeout(to)}
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok||!j.text)throw {msg:j.error||('Błąd '+r.status),busy:j.busy};
+  h.push({role:'user',parts:[{text:q}]},{role:'model',parts:[{text:j.text}]});
+  return j.text;
+}
+function md(t){
+  let s=esc(t);
+  s=s.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g,'$1<i>$2</i>');
+  const lines=s.split('\n');let out='',list=null;
+  lines.forEach(l=>{const m=l.match(/^\s*(?:[-*•]|(\d+)[.)])\s+(.*)/);
+    if(m){const tg=m[1]?'ol':'ul';if(list!==tg){if(list)out+=`</${list}>`;out+=`<${tg}>`;list=tg}out+=`<li>${m[2]}</li>`}
+    else{if(list){out+=`</${list}>`;list=null}out+=l.trim()?l+'<br>':'<br>'}});
+  if(list)out+=`</${list}>`;
+  out=out.replace(/(<br>){2,}/g,'<br><br>').replace(/(<br>)+$/,'');
+  out=out.replace(/\[(?:str|strona|s)\.?\s*([\d,\s–-]+)\]/gi,(_,g)=>{const ps=[...new Set((g.match(/\d+/g)||[]).map(Number))];const rng=g.match(/(\d+)\s*[–-]\s*(\d+)/);if(rng){for(let i=+rng[1];i<=+rng[2]&&ps.length<8;i++)if(!ps.includes(i))ps.push(i)}return ps.sort((a,b)=>a-b).map(p=>`<button class="pgbtn" data-goto="${p}">str. ${p} →</button>`).join('')});
+  return out;
+}
+
+function modeBar(){if(!hasAI())return '';const m=aiMode();return `<div class="mbar"><button data-mode="ai" class="${m==='ai'?'on':''}">✨ AI — własne słowa</button><button data-mode="local" class="${m==='local'?'on':''}">🔎 Fragmenty</button></div>`}
+
 /* =================== INTELIGENTNA INSTRUKCJA (asystent) =================== */
 const PLM={'ą':'a','ć':'c','ę':'e','ł':'l','ń':'n','ó':'o','ś':'s','ź':'z','ż':'z'};
 const STOP=new Set('a,aby,albo,ale,bo,by,byc,co,czy,czym,czego,dla,do,gdy,gdzie,i,ich,ile,im,jak,jaka,jaki,jakie,jakim,jakiej,jakich,jest,je,jej,jego,juz,kiedy,ktora,ktore,ktory,ktorej,ktorych,lub,ma,mi,mnie,moze,mozna,na,nad,nie,o,od,oraz,po,pod,przy,przez,sa,sie,ta,tak,te,tego,tej,ten,to,tu,tym,u,w,we,z,za,ze,zeby,prosze,powiedz,wyjasnij,opisz,podaj,napisz,jakis,mozesz,chce,chcialbym,wiedziec,tam,czyli,np,itp,tylko,bardzo,jesli,jezeli,teraz,trzeba,nalezy,mam,moj,moja,sie,ktos,jakos,cos,taki,takie,tego,tych,dlaczego,czemu,wszystko,coś,instrukcji,instrukcja,instrukcje'.split(','));
@@ -1360,7 +1407,7 @@ function renderAI(){
   box.innerHTML=`<div class="vbar">${many?'<button class="tb" data-aiback>← Zmień plik</button>':''}<div class="t">💬 Asystent: ${f.short}</div></div>
   <div class="seg2"><button data-seg="doc">📄 Instrukcja</button><button data-seg="chat">💬 Czat</button></div>
   <div class="split"><div id="aiDoc"><div class="vbar" style="margin-bottom:8px">${zoomBar('av',f)}</div>${viewerHTML(f,'av')}</div>
-  <div class="card chat" id="aiChat"><div class="msgs" id="msgs"></div><div class="chips" id="chips">${f.q.map(q=>`<button data-ask="${esc(q)}">${esc(q)}</button>`).join('')}</div>
+  <div class="card chat" id="aiChat"><div id="mbarBox">${modeBar()}</div><div class="msgs" id="msgs"></div><div class="chips" id="chips">${f.q.map(q=>`<button data-ask="${esc(q)}">${esc(q)}</button>`).join('')}</div>
   <form class="cin" id="cin"><input id="qIn" placeholder="Zadaj pytanie o tę instrukcję…" autocomplete="off" enterkeyhint="send"><button type="submit">Wyślij</button></form></div></div>`;
   mountViewer(f,'av');setSeg(ai.seg);
   if(!CHAT[f.id])CHAT[f.id]=[{r:'b',h:`Cześć! Jestem asystentem do instrukcji <b>${esc(f.title)}</b>.<br>Zadaj pytanie, a znajdę odpowiedź w tym pliku i pokażę stronę, z której pochodzi. Możesz też kliknąć jedno z gotowych pytań poniżej albo wpisać <b>spis treści</b>.`}];
@@ -1375,10 +1422,13 @@ function ask(q){
   const f=fileById(ai.id);pushMsg('u',esc(q));
   const t=document.createElement('div');t.className='msg b';t.innerHTML='<span class="dots"><span></span><span></span><span></span></span>';$('#msgs').appendChild(t);scrollChat();
   const show=h=>{t.remove();const el=pushMsg('b',h);const m=$('#msgs');m.scrollTop=el.offsetTop-10};
-  setTimeout(()=>show(answer(f,q)),300);
+  if(aiMode()==='ai'){
+    askAI(f,q).then(txt=>show(`<div class="src">✨ Odpowiedź AI na podstawie instrukcji</div>${md(txt)}`))
+    .catch(e=>show(`<div class="muted" style="font-size:13px;margin-bottom:6px">⚠️ ${esc(e&&e.msg?e.msg:'Brak połączenia z AI.')} Poniżej fragment z instrukcji:</div>`+answer(f,q)));
+  }else setTimeout(()=>show(answer(f,q)),300);
 }
 document.addEventListener('click',e=>{
-  const t=e.target.closest('[data-plopen],[data-plback],[data-goai],[data-aisel],[data-aiback],[data-zoom],[data-dl],[data-seg],[data-ask],[data-goto],[data-cont],[data-chunk]');if(!t)return;
+  const t=e.target.closest('[data-plopen],[data-plback],[data-goai],[data-aisel],[data-aiback],[data-zoom],[data-dl],[data-seg],[data-ask],[data-goto],[data-cont],[data-chunk],[data-mode]');if(!t)return;
   const d=t.dataset;
   if(d.plopen){pl.id=d.plopen;renderPliki();window.scrollTo({top:0})}
   else if('plback' in d){pl.id=null;renderPliki()}
@@ -1389,6 +1439,7 @@ document.addEventListener('click',e=>{
   else if(d.dl){t.href=pdfUrl(fileById(d.dl))}
   else if(d.seg){setSeg(d.seg)}
   else if(d.ask){ask(d.ask)}
+  else if(d.mode){store.set('aimode',d.mode);$('#mbarBox').innerHTML=modeBar();pushMsg('b',d.mode==='ai'?'✨ Tryb AI: odpowiadam własnymi słowami na podstawie instrukcji.':'🔎 Tryb fragmentów: pokazuję dokładne fragmenty instrukcji.');scrollChat()}
   else if(d.goto){if(ai.id&&document.getElementById('av')){if(innerWidth<900)setSeg('doc');setTimeout(()=>goPage('av',+d.goto),60)}else goPage('pv',+d.goto)}
   else if(d.cont){const f=fileById(ai.id);const el=pushMsg('b',chunkMsg(f,+d.cont,null,'Dalsza część:'));$('#msgs').scrollTop=el.offsetTop-10;t.remove()}
   else if(d.chunk){const f=fileById(ai.id);const {terms}=search(f,d.q||'');const el=pushMsg('b',chunkMsg(f,+d.chunk,terms));$('#msgs').scrollTop=el.offsetTop-10}
