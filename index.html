@@ -1296,8 +1296,10 @@ Zasady:
 TREŚĆ INSTRUKCJI:
 ${docText(f)}`;
   const contents=[...h.slice(-8),{role:'user',parts:[{text:q}]}];
-  const ctl=new AbortController();const to=setTimeout(()=>ctl.abort(),45000);
-  let r;try{r=await fetch(AI_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:sys,contents}),signal:ctl.signal})}finally{clearTimeout(to)}
+  const ctl=new AbortController();const to=setTimeout(()=>ctl.abort(),90000);
+  let r;try{r=await fetch(AI_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:sys,contents}),signal:ctl.signal})}
+  catch(e){throw {msg:e&&e.name==='AbortError'?'AI nie odpowiedziało w ciągu 90 s.':'Przeglądarka nie dostała odpowiedzi od pośrednika ('+(e&&e.message||e)+').'}}
+  finally{clearTimeout(to)}
   const j=await r.json().catch(()=>({}));
   if(!r.ok||!j.text)throw {msg:j.error||('Błąd '+r.status),busy:j.busy};
   h.push({role:'user',parts:[{text:q}]},{role:'model',parts:[{text:j.text}]});
